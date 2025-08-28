@@ -1,5 +1,49 @@
 """
 IKEv2 State Machine and Security Association Management
+
+RFC 7296 - IKEv2 Exchanges:
+
+1. IKE_SA_INIT Exchange:
+   Initiator                         Responder
+   -----------                       -----------
+   HDR, SAi1, KEi, Ni         -->
+                              <--    HDR, SAr1, KEr, Nr, [CERTREQ]
+
+2. IKE_AUTH Exchange:
+   Initiator                         Responder
+   -----------                       -----------
+   HDR, SK {IDi, [CERT,] [CERTREQ,]
+            [IDr,] AUTH, SAi2,
+            TSi, TSr}          -->
+                              <--    HDR, SK {IDr, [CERT,] AUTH,
+                                             SAr2, TSi, TSr}
+
+3. CREATE_CHILD_SA Exchange:
+   Initiator                         Responder
+   -----------                       -----------
+   HDR, SK {SA, Ni, [KEi],
+            TSi, TSr}          -->
+                              <--    HDR, SK {SA, Nr, [KEr],
+                                             TSi, TSr}
+
+4. INFORMATIONAL Exchange:
+   Initiator                         Responder
+   -----------                       -----------
+   HDR, SK {[N,] [D,]
+            [CP,] ...}         -->
+                              <--    HDR, SK {[N,] [D,]
+                                             [CP,] ...}
+
+Key:
+  HDR = IKE Header
+  SA = Security Association
+  KE = Key Exchange
+  N = Nonce (Ni = Initiator's nonce, Nr = Responder's nonce)
+  ID = Identification
+  AUTH = Authentication
+  TS = Traffic Selector
+  SK {...} = Encrypted and Authenticated
+  [...] = Optional
 """
 
 import os
@@ -327,7 +371,11 @@ class IKEv2SA:
         return True
         
     def build_ike_sa_init_request(self) -> Message:
-        """Build IKE_SA_INIT request"""
+        """
+        Build IKE_SA_INIT request
+        
+        Message format: HDR, SAi1, KEi, Ni, [N(NAT_DETECTION_SOURCE_IP), N(NAT_DETECTION_DESTINATION_IP)]
+        """
         message = Message(
             spi_i=self.spi_i,
             spi_r=b'\x00' * 8,
@@ -380,7 +428,11 @@ class IKEv2SA:
         return message
         
     def build_ike_auth_request(self, child_sa_config: Optional[Dict] = None) -> Message:
-        """Build IKE_AUTH request"""
+        """
+        Build IKE_AUTH request
+        
+        Message format: HDR, SK {IDi, AUTH, [SAi2, TSi, TSr]}
+        """
         message = Message(
             spi_i=self.spi_i,
             spi_r=self.spi_r,

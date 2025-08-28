@@ -1,5 +1,19 @@
 """
 IKEv2 Payload implementations according to RFC 7296
+
+RFC 7296 - Generic Payload Header:
+
+                        1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Next Payload  |C|  RESERVED   |         Payload Length        |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                                                               |
+   ~                       Payload Data                            ~
+   |                                                               |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+   C = Critical flag (bit 7 of Flags field)
 """
 
 import struct
@@ -33,7 +47,11 @@ class Payload:
         return struct.pack('!BBH', self.next_payload, flags, payload_length)
 
 class SAPayload(Payload):
-    """Security Association Payload"""
+    """
+    Security Association Payload
+    
+    SA Payload contains one or more Proposal substructures
+    """
     
     def __init__(self, proposals: List['Proposal'] = None):
         super().__init__()
@@ -62,7 +80,11 @@ class SAPayload(Payload):
                 break
 
 class Proposal:
-    """Proposal substructure"""
+    """
+    Proposal substructure
+    
+    Format: | 0/2 | Res | Length | Prop# | Proto | SPISize | #Trans | SPI | Transforms |
+    """
     
     def __init__(self, num=1, protocol_id=ProtocolID.IKE, spi=b'', transforms=None):
         self.proposal_num = num
@@ -114,7 +136,11 @@ class Proposal:
         return prop_length
 
 class Transform:
-    """Transform substructure"""
+    """
+    Transform substructure
+    
+    Format: | 0/3 | Res | Length | Type | Res | Transform ID | Attributes |
+    """
     
     def __init__(self, transform_type=None, transform_id=None, attributes=None):
         self.transform_type = transform_type
@@ -163,7 +189,11 @@ class Transform:
         return trans_length
 
 class KEPayload(Payload):
-    """Key Exchange Payload"""
+    """
+    Key Exchange Payload
+    
+    Format: | DH Group # | RESERVED | Key Exchange Data |
+    """
     
     def __init__(self, dh_group=0, ke_data=b''):
         super().__init__()
@@ -182,7 +212,11 @@ class KEPayload(Payload):
         self.ke_data = data[8:]
 
 class NoncePayload(Payload):
-    """Nonce Payload"""
+    """
+    Nonce Payload
+    
+    Format: | Nonce Data (16-256 bytes) |
+    """
     
     def __init__(self, nonce=b''):
         super().__init__()
@@ -198,7 +232,11 @@ class NoncePayload(Payload):
         self.nonce = data[4:]
 
 class IDPayload(Payload):
-    """Identification Payload"""
+    """
+    Identification Payload
+    
+    Format: | ID Type | RESERVED | Identification Data |
+    """
     
     def __init__(self, id_type=IDType.IPV4_ADDR, id_data=b''):
         super().__init__()
@@ -236,7 +274,11 @@ class IDPayload(Payload):
             self.id_data = identity
 
 class AuthPayload(Payload):
-    """Authentication Payload"""
+    """
+    Authentication Payload
+    
+    Format: | Auth Method | RESERVED | Authentication Data |
+    """
     
     def __init__(self, auth_method=AuthMethod.SHARED_KEY, auth_data=b''):
         super().__init__()
@@ -293,7 +335,11 @@ class CertReqPayload(Payload):
         self.ca_data = data[5:]
 
 class NotifyPayload(Payload):
-    """Notify Payload"""
+    """
+    Notify Payload
+    
+    Format: | Protocol ID | SPI Size | Notify Type | SPI | Notification Data |
+    """
     
     def __init__(self, protocol_id=ProtocolID.IKE, notify_type=0, spi=b'', notify_data=b''):
         super().__init__()
@@ -324,7 +370,11 @@ class NotifyPayload(Payload):
         self.notify_data = data[offset:]
 
 class DeletePayload(Payload):
-    """Delete Payload"""
+    """
+    Delete Payload
+    
+    Format: | Protocol ID | SPI Size | Num SPIs | SPIs |
+    """
     
     def __init__(self, protocol_id=ProtocolID.IKE, spis=None):
         super().__init__()
@@ -406,7 +456,11 @@ class TSPayload(Payload):
             offset += ts_len
 
 class TrafficSelector:
-    """Traffic Selector substructure"""
+    """
+    Traffic Selector substructure
+    
+    Format: | TS Type | IP Proto | Length | Start Port | End Port | Start Addr | End Addr |
+    """
     
     def __init__(self, ts_type=TSType.IPV4_ADDR_RANGE, ip_proto=0,
                  start_port=0, end_port=65535, start_addr=None, end_addr=None):
@@ -447,7 +501,11 @@ class TrafficSelector:
         return ts_length
 
 class SKPayload(Payload):
-    """Encrypted Payload"""
+    """
+    Encrypted Payload
+    
+    Format: | IV | Encrypted Payloads | Padding | Pad Length | Integrity Data |
+    """
     
     def __init__(self, encrypted_data=b''):
         super().__init__()
